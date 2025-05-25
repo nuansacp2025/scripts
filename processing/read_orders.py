@@ -1,21 +1,32 @@
 import csv
-from collections import defaultdict
+from generate_code import generate_ticket_id
 
 def read_orders(csv_file_path):
-    email_to_ids = defaultdict(list)
-    id_to_category = {}
-
+    orders = {}
     with open(csv_file_path, mode='r', encoding='utf-8-sig') as file:
         reader = csv.DictReader(file)
 
-        row_id = 1
         for row in reader:
+            if row["Status"] != "Paid": # Ignore unpaid orders
+                continue
+
+            order_id = row["Order"]
+            date_time = row["Created Date"]
             email = row["Email"]
-            product_name = row["Product Name"]
+            cat = row["Product Name"]
+            qty = row["Quantity"]
 
-            email_to_ids[email].append(row_id)
-            id_to_category[row_id] = product_name
+            ticket_id = generate_ticket_id(order_id, date_time)
+            key = (ticket_id, email)
 
-            row_id += 1
+            if key not in orders:
+                orders[key] = {}
 
-    return email_to_ids, id_to_category
+            if cat not in orders[key]:
+                orders[key][cat] = 0
+
+            orders[key][cat] += qty
+    
+    return orders
+
+
