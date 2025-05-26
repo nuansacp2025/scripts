@@ -13,7 +13,7 @@ def generate_ticket_id(order_id: str, datetime_str: str) -> str:
                             (e.g., "3/10/2023 4:25:42 PM").
 
     Returns:
-        str: A unique 8-character ticket ID (e.g., "2164w3WU").
+        str: A unique 9-character ticket ID (e.g., "2164w3WUf").
     """
     last4 = order_id[-4:]
     code = datetime_to_code(datetime_str)
