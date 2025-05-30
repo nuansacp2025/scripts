@@ -1,6 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 cred = credentials.Certificate('credential.json')
 
@@ -20,11 +21,17 @@ def add_orders(orders):
         if "catC" not in ticket:
             ticket["catC"] = 0
         ticket["code"] = ticket_id
-        ticket["checkedIn"] = False
-        ticket["seatConfirmed"] = False
-        print(ticket)
         _, ref = db.collection("tickets").add(ticket)
-        _, _ = db.collection("customers").add({
-            "email": email,
-            "ticketId": ref.id
-        })
+        cache = db.collection("customers").where(filter=FieldFilter("email", "==", email)).stream()
+        cache_id = None
+        cache_dict = None
+        for doc in cache:
+            cache_id = doc.id
+            cache_dict = doc.to_dict()
+        if not cache_id:
+            _, _ = db.collection("customers").add({
+                "email": email,
+                "ticketIds": [ref.id]
+            })
+        else:
+            db.collection("customers").document(cache_id).update({"ticketIds": cache_dict["ticketIds"] + [ref.id]})
