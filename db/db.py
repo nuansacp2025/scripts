@@ -1,9 +1,18 @@
+import os
+import json
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
-cred = credentials.Certificate('credential.json')
+cred_json_str = os.getenv('PY_CREDENTIAL_JSON')
+
+if not cred_json_str:
+    raise ValueError("Environment variable PY_CREDENTIAL_JSON not set")
+
+cred_json = json.loads(cred_json_str)
+
+cred = credentials.Certificate(cred_json)
 
 app = firebase_admin.initialize_app(cred)
 
