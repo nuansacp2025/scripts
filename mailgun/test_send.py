@@ -1,4 +1,4 @@
-from mailer.send_email import send_email
+from .mailer.send_email import send_email
 
 send_email(
     to_email="sandykristianwaluyo3@gmail.com",

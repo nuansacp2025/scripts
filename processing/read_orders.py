@@ -1,5 +1,5 @@
 import csv
-from generate_code import generate_ticket_id
+from .generate_code import generate_ticket_id
 
 def read_orders(csv_file_path):
     orders = {}
