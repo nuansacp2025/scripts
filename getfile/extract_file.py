@@ -14,7 +14,7 @@ def extract_file(folder_path):
     imap_url = 'imap.gmail.com'
     my_mail = imaplib.IMAP4_SSL(imap_url)
 
-    files_extracted = []
+    csv_contents = []
 
     try:
         my_mail.login(CSV_RECEIVER_EMAIL, CSV_RECEIVER_PASSWORD)
@@ -33,13 +33,9 @@ def extract_file(folder_path):
 
         mail_id_list = data[0].split() # IDs of all emails we want to fetch
 
-        raw_emails = [] # Empty list to capture all messages
         for num in mail_id_list:
-            typ, data = my_mail.fetch(num, '(RFC822)') # Fetch the whole message
-            raw_emails.append(data)
-
-        for raw_email in raw_emails:
-            for response_part in raw_email:
+            typ, data = my_mail.fetch(num, '(RFC822)')
+            for response_part in data:
                 if isinstance(response_part, tuple):
                     msg = email.message_from_bytes(response_part[1])
 
@@ -51,12 +47,11 @@ def extract_file(folder_path):
 
                         filename = part.get_filename()
                         if filename and filename.endswith(".csv"):
-                            filepath = os.path.join(folder_path, filename)
-                            with open(filepath, 'wb') as f:
-                                f.write(part.get_payload(decode=True))
-                            files_extracted.append(filepath)
+                            csv_bytes = part.get_payload(decode=True)
+                            csv_contents.append(csv_bytes)
         
-        return files_extracted
+        return csv_contents
+    
     except Exception as err:
         raise err
     finally:
