@@ -1,10 +1,21 @@
 import csv
 from .generate_code import generate_ticket_id
+from db import add_orders
+from getfile import extract_file
+from mailgun import send_email
 
-def read_orders(csv_bytes):
+def process_orders():
+    csv_contents = extract_file()
+
+    for csv_content in csv_contents:
+        orders = read_orders(csv_content)
+        add_orders(orders)
+        # TODO: send email to confirm purchase
+
+def read_orders(csv_content):
     orders = {}
 
-    decoded = csv_bytes.decode('utf-8-sig')
+    decoded = csv_content.decode('utf-8-sig')
     file = io.StringIO(decoded)
     reader = csv.DictReader(file)
 

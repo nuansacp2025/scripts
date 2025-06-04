@@ -10,7 +10,7 @@ CSV_RECEIVER_EMAIL = os.getenv("CSV_RECEIVER_EMAIL")
 CSV_RECEIVER_PASSWORD = os.getenv("CSV_RECEIVER_PASSWORD")
 CSV_SENDER_EMAIL = os.getenv("CSV_SENDER_EMAIL")
 
-def extract_file(folder_path):
+def extract_file():
     imap_url = 'imap.gmail.com'
     my_mail = imaplib.IMAP4_SSL(imap_url)
 
