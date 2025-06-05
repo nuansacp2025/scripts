@@ -10,7 +10,6 @@ def process_orders():
     for csv_content in csv_contents:
         orders = read_orders(csv_content)
         add_orders(orders)
-        # TODO: send email to confirm purchase
 
 def read_orders(csv_content):
     orders = {}
