@@ -1,9 +1,9 @@
 import csv
 import re
 from .generate_code import generate_ticket_id
-from db import add_orders
-from getfile import extract_file
-from mailgun import send_email
+from ..db import add_orders
+from ..getfile import extract_file
+from ..mailgun import send_email
 
 def process_orders():
     csv_contents = extract_file()

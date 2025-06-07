@@ -4,7 +4,7 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
-from mailgun import send_email
+from ..mailgun import send_email
 from dotenv import load_dotenv
 
 load_dotenv()
