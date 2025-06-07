@@ -1,4 +1,5 @@
 import csv
+import re
 from .generate_code import generate_ticket_id
 from db import add_orders
 from getfile import extract_file
@@ -19,14 +20,16 @@ def read_orders(csv_content):
     reader = csv.DictReader(file)
 
     for row in reader:
-        if row["Status"] != "Paid":  # Ignore unpaid orders
+        if row["Booking Status"] != "Paid":  # Ignore unpaid orders
             continue
 
-        order_id = row["Order"]
-        date_time = row["Created Date"]
+        order_id = row["Receipt"]
+        date_time = row["Paid Date"]
         email = row["Email"]
-        cat = row["Product Name"]
-        qty = int(row["Quantity"])  # Ensure it's an integer
+
+        order_description = row["Line Description"]
+        cat, qty = parse_order_description(order_description)
+        cat = "cat" + cat
 
         ticket_id = generate_ticket_id(order_id, date_time)
         key = (ticket_id, email)
@@ -40,5 +43,11 @@ def read_orders(csv_content):
         orders[key][cat] += qty
 
     return orders
+
+def parse_order_description(line_description):
+    match = re.search(r'Category ([A-Z]): (\d+) pax', line_description)
+    if match:
+        return match.group(1), int(match.group(2))
+    return None
 
 
