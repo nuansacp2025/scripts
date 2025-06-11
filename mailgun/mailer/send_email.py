@@ -1,5 +1,7 @@
+import asyncio
 import os
 import requests
+import time
 from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
 
@@ -17,7 +19,7 @@ ATTACHMENTS_DIR = os.path.join(BASE_DIR, "attachments")
 
 env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), 'templates')))
 
-def send_email(to_email, subject, template_name, context, attachments=None):
+def send_email(to_email, subject, template_name, context, attachments=None, timeout=5):
     template = env.get_template(template_name)
     html_content = template.render(context)
 
@@ -29,11 +31,31 @@ def send_email(to_email, subject, template_name, context, attachments=None):
     }
     files = [("attachment", f) for f in attachments] if attachments is not None else None
 
-    response = requests.post(
-        f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
-        auth=("api", MAILGUN_API_KEY),
-        files=files,
-        data=data,
-    )
+    # Possible API response codes: 400, 403, 404, 429, 500
+    # https://documentation.mailgun.com/docs/mailgun/api-reference/#api-response-codes
 
-    return response
+    start_time = time.time()
+    retry_interval = 0.1
+    while True:
+        try:
+            response = requests.post(
+                f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
+                auth=("api", MAILGUN_API_KEY),
+                files=files,
+                data=data,
+                timeout=timeout
+            )
+        except requests.Timeout:
+            raise RuntimeError("Request timed out")
+        if response.status_code == 200:
+            return response
+        elif response.status_code in (429, 500):
+            elapsed = time.time() - start_time
+            if elapsed >= timeout:
+                raise RuntimeError("Request timed out after retries")
+            sleep_time = min(retry_interval, timeout - elapsed)
+            time.sleep(sleep_time)
+            retry_interval *= 2
+            continue
+        else:
+            response.raise_for_status()
