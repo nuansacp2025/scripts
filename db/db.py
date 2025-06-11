@@ -32,7 +32,10 @@ def add_order_to_customer(transaction, email, ticket_ref):
             "lastUpdated": SERVER_TIMESTAMP
         })
     else:
-        transaction.update(query[0].reference, {"ticketIds": firestore.ArrayUnion([ticket_ref.id])})
+        transaction.update(query[0].reference, {
+            "ticketIds": firestore.ArrayUnion([ticket_ref.id]),
+            "lastUpdated": SERVER_TIMESTAMP
+        })
 
 def add_orders(orders):
     # Assumption: the cat_dict keys are catA, catB, catC following the naming in firestore
