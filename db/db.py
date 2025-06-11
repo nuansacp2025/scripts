@@ -4,6 +4,7 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
+from google.cloud.firestore import SERVER_TIMESTAMP
 
 cred_json_str = os.getenv('PY_CREDENTIAL_JSON')
 
@@ -28,6 +29,7 @@ def add_order_to_customer(transaction, email, ticket_ref):
         transaction.set(newRef, {
             "email": email, 
             "ticketIds": [ticket_ref.id],
+            "lastUpdated": SERVER_TIMESTAMP
         })
     else:
         transaction.update(query[0].reference, {"ticketIds": firestore.ArrayUnion([ticket_ref.id])})
@@ -46,5 +48,6 @@ def add_orders(orders):
         ticket["code"] = ticket_id
         ticket["checkedIn"] = False
         ticket["seatConfirmed"] = False
+        ticket["lastUpdated"] = SERVER_TIMESTAMP
         _, ref = db.collection("tickets").add(ticket)
         add_order_to_customer(transaction, email, ref)
