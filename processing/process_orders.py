@@ -5,12 +5,12 @@ from ..db import add_orders
 from ..getfile import extract_file
 from ..mailgun import send_email
 
-def process_orders():
+async def process_orders():
     csv_contents = extract_file()
 
     for csv_content in csv_contents:
         orders = read_orders(csv_content)
-        add_orders(orders)
+        await add_orders(orders)
 
 def read_orders(csv_content):
     orders = {}
@@ -30,6 +30,7 @@ def read_orders(csv_content):
         order_description = row["Line Description"]
         cat, qty = parse_order_description(order_description)
         cat = "cat" + cat
+        qty = qty * int(float(row["Quantity"]))
 
         ticket_id = generate_ticket_id(order_id, date_time)
         key = (ticket_id, email)

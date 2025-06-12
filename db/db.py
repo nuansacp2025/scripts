@@ -1,5 +1,6 @@
 import os
 import json
+import aiohttp
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -43,29 +44,38 @@ def add_order_to_customer(transaction, email, ticket_ref):
             "lastUpdated": SERVER_TIMESTAMP
         })
 
-def add_orders(orders):    
+async def add_orders(orders):    
     # Assumption: the cat_dict keys are catA, catB, catC following the naming in firestore
-    for key, cat_dict in orders.items():
-        ticket_id, email = key
-        ticket = cat_dict.copy()
-        if "catA" not in ticket:
-            ticket["catA"] = 0
-        if "catB" not in ticket:
-            ticket["catB"] = 0
-        if "catC" not in ticket:
-            ticket["catC"] = 0
-        ticket["code"] = ticket_id
-        ticket["checkedIn"] = False
-        ticket["seatConfirmed"] = False
-        ticket["lastUpdated"] = SERVER_TIMESTAMP
+    async with aiohttp.ClientSession() as session:
+        for key, cat_dict in orders.items():
+            ticket_id, email = key
+            ticket = cat_dict.copy()
+            if "catA" not in ticket:
+                ticket["catA"] = 0
+            if "catB" not in ticket:
+                ticket["catB"] = 0
+            if "catC" not in ticket:
+                ticket["catC"] = 0
+            ticket["code"] = ticket_id
+            ticket["checkedIn"] = False
+            ticket["seatConfirmed"] = False
+            ticket["purchaseConfirmationSent"] = False
+            ticket["lastUpdated"] = SERVER_TIMESTAMP
+            ticket["createdAt"] = SERVER_TIMESTAMP
 
-        _, ref = db.collection("tickets").add(ticket)
-        add_order_to_customer(transaction, email, ref)
+            _, ref = db.collection("tickets").add(ticket)
+            add_order_to_customer(transaction, email, ref)
 
-        subject = "Confirmation: Your Ticket and Login Details"
-        template_name = "purchase.html"
-        context = {
-            "ticket_code": ticket_id,
-            "login_link": BASE_URL + "/login"
-        }
-        send_email(email, subject, template_name, context)
+            subject = "Confirmation: Your Ticket and Login Details"
+            template_name = "purchase.html"
+            context = {
+                "ticket_code": ticket_id,
+                "login_link": BASE_URL + "/login"
+            }
+
+            try:
+                response = await send_email(session, email, subject, template_name, context)
+                if response.status == 200:
+                    ref.update({"purchaseConfirmationSent": True})
+            except Exception as e:
+                print(f"Email failed to {email}: {e}")
