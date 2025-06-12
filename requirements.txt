@@ -1,4 +1,4 @@
-requests
+aiohttp
 jinja2
 python-dotenv
 firebase-admin
