@@ -1,6 +1,9 @@
 import pymupdf
 from PIL import Image, ImageDraw, ImageFont
 import io
+import os
+
+ASSETS_FOLDER_PATH = os.path.join(os.path.dirname(__file__), "assets")
 
 CATEGORIES = ["catA", "catB", "catC", "vip"]
 PDFS = ["tnc"]
@@ -19,11 +22,11 @@ class TicketPDFGenerator:
     def __init__(self):
         self.images = {}
         for cat in CATEGORIES:
-            with open(f"processing/assets/categories/{cat}.png", "rb") as f:
+            with open(f"{ASSETS_FOLDER_PATH}/categories/{cat}.png", "rb") as f:
                 self.images[cat] = Image.open(io.BytesIO(f.read()))
         self.pdfs = {}
         for pdf in PDFS:
-            with open(f"processing/assets/pdfs/{pdf}.pdf", "rb") as f:
+            with open(f"{ASSETS_FOLDER_PATH}/pdfs/{pdf}.pdf", "rb") as f:
                 self.pdfs[pdf] = pymupdf.open(stream=f.read())
 
 
@@ -70,7 +73,7 @@ class TicketPDFGenerator:
     def generate_pdfs_from_seats(self, seats: list[tuple[str, str]]) -> list[tuple[str, io.BytesIO]]:
         def generate(seat: tuple[str, str]) -> tuple[str, io.BytesIO]:
             label, cat = seat
-            fname = f"{cat}_{label}"
+            fname = f"{cat}_{label}.pdf"
             image_bytes = self.generate_image(cat, label)
             pdf_bytes = self.generate_pdf(image_bytes)
             return (fname, pdf_bytes)
