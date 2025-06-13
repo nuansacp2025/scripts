@@ -63,8 +63,12 @@ async def add_orders(orders):
             ticket["lastUpdated"] = SERVER_TIMESTAMP
             ticket["createdAt"] = SERVER_TIMESTAMP
 
-            _, ref = db.collection("tickets").add(ticket)
-            add_order_to_customer(transaction, email, ref)
+            try:
+                _, ref = db.collection("tickets").add(ticket)
+                add_order_to_customer(transaction, email, ref)
+            except Exception as e:
+                print(f"Failed to insert ticket to DB: {e}")
+                continue
 
             subject = "Confirmation: Your Ticket and Login Details"
             template_name = "purchase.html"
