@@ -1,3 +1,4 @@
+import io
 import csv
 import re
 from .generate_code import generate_ticket_id
@@ -28,9 +29,11 @@ def read_orders(csv_content):
         email = row["Email"]
 
         order_description = row["Line Description"]
-        cat, qty = parse_order_description(order_description)
+        cat, qty_pax = parse_order_description(order_description)
         cat = "cat" + cat
         qty = qty * int(float(row["Quantity"]))
+
+        qty = qty_pax * int(row["Quantity"])
 
         ticket_id = generate_ticket_id(order_id, date_time)
         key = (ticket_id, email)

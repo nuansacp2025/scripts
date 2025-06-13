@@ -34,7 +34,7 @@ def datetime_to_code(date_time_str: str) -> str:
     minute = dt.minute   # 0–59 → 6 bits
 
     # Combine into a single integer 20 bits
-    code = (month << 16) | (day << 11) | (hour << 6) | minute << 6
+    code = (month << 16) | (day << 11) | (hour << 6) | minute
 
     # Convert 20 bit to 5 base-62 characters
     return to_base62(code, 4)
