@@ -7,6 +7,9 @@ from ..db import add_orders
 from ..getfile import extract_file
 from ..mailgun import send_email
 
+with open("assets/data/bundle_mapping.json", "r") as f:
+    BUNDLE_DICT = json.load(f)
+
 async def process_orders():
     csv_contents = extract_file()
 
@@ -52,12 +55,9 @@ def read_orders(csv_content):
     return orders
 
 def parse_order_description(line_description):
-    with open("assets/data/bundle_mapping.json", "r") as f:
-        bundle_dict = json.load(f)
-
-    if line_description not in bundle_dict:
+    if line_description not in BUNDLE_DICT:
         raise KeyError(f"Invalid order description: '{line_description}'")
 
-    return bundle_dict[line_description]
+    return BUNDLE_DICT[line_description]
 
 
