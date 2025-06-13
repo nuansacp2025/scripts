@@ -1,0 +1,18 @@
+{
+    "Category A: 1 pax bundle.": ["catA", 1],
+    "Category A: 2 pax bundle.": ["catA", 2],
+    "Category A: 3 pax bundle.": ["catA", 3],
+    "Category A: 4 pax bundle.": ["catA", 4],
+    "Category A: 5 pax bundle.": ["catA", 5],
+    "Category A: 6 pax bundle.": ["catA", 6],
+    "Category A: 7 pax bundle.": ["catA", 7],
+    "Category A: 8 pax bundle.": ["catA", 8],
+    "Category A: 9 pax bundle.": ["catA", 9],
+    "Category A: 10 pax bundle.": ["catA", 10],
+    "Category B: 1 pax bundle.": ["catB", 1],
+    "Category B: 2 pax bundle.": ["catB", 2],
+    "Category B: 3 pax bundle.": ["catB", 3],
+    "Category B: 4 pax bundle.": ["catB", 4],
+    "Category B: 5 pax bundle.": ["catB", 5],
+    "Category C: 1 pax bundle.": ["catC", 1]
+}

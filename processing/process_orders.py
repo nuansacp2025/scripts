@@ -1,6 +1,7 @@
 import io
 import csv
 import re
+import json
 from .generate_code import generate_ticket_id
 from ..db import add_orders
 from ..getfile import extract_file
@@ -29,8 +30,12 @@ def read_orders(csv_content):
         email = row["Email"]
 
         order_description = row["Line Description"]
-        cat, qty = parse_order_description(order_description)
-        cat = "cat" + cat
+        
+        try:
+            cat, qty = parse_order_description(order_description)
+        except Exception as e:
+            print(f"Failed to parse order description: {e}")
+
         qty = qty * int(float(row["Quantity"]))
 
         ticket_id = generate_ticket_id(order_id, date_time)
@@ -47,9 +52,12 @@ def read_orders(csv_content):
     return orders
 
 def parse_order_description(line_description):
-    match = re.search(r'Category ([A-Z]): (\d+) pax', line_description)
-    if match:
-        return match.group(1), int(match.group(2))
-    return None
+    with open("assets/data/bundle_mapping.json", "r") as f:
+        bundle_dict = json.load(f)
+
+    if line_description not in bundle_dict:
+        raise KeyError(f"Invalid order description: '{line_description}'")
+
+    return bundle_dict[line_description]
 
 
