@@ -43,12 +43,12 @@ def add_order_to_customer(transaction, email, ticket_ref):
             "lastUpdated": SERVER_TIMESTAMP
         })
 
-def get_unconfirmed_tickets():
+def get_unconfirmed_purchases():
     try:
         query = (
             db.collection("tickets")
             .where("purchaseConfirmationSent", "==", False)
-            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .order_by("createdAt", direction=firestore.Query.ASCENDING)
             .limit(100)
         )
 

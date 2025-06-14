@@ -64,12 +64,12 @@ async def send_email(session: aiohttp.ClientSession, to_email, subject, template
                     response.raise_for_status()
         except asyncio.TimeoutError:
             raise RuntimeError("Request timed out")
-        
-async def send_confirmation_email(session: aiohttp.ClientSession, email, ticket_id, ref):
-    subject = "Confirmation: Your Ticket and Login Details"
+
+async def send_purchase_confirmation(session: aiohttp.ClientSession, email, ticket_code, ref):
+    subject = "NUANSA 2025 Ticket Purchase Confirmation"
     template_name = "purchase.html"
     context = {
-        "ticket_code": ticket_id,
+        "ticket_code": ticket_code,
         "login_link": BASE_URL + "/login"
     }
 
@@ -77,6 +77,9 @@ async def send_confirmation_email(session: aiohttp.ClientSession, email, ticket_
         response = await send_email(session, email, subject, template_name, context)
         if response.status == 200:
             ref.update({"purchaseConfirmationSent": True})
-            print(f"Email with ticket ID: {ticket_id} sent to {email}")
+            print(f"Email with ticket code: {ticket_code} sent to {email}")
+        else:
+            # Should not happen as `send_email` already handles this case
+            response.raise_for_status()
     except Exception as e:
         print(f"Email failed to {email}: {e}")
