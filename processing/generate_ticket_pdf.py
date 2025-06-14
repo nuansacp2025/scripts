@@ -8,6 +8,9 @@ ASSETS_FOLDER_PATH = os.path.join(os.path.dirname(__file__), "assets")
 CATEGORIES = ["catA", "catB", "catC", "vip"]
 PDFS = ["tnc"]
 
+PAGE_WIDTH, PAGE_HEIGHT = 612, 792  # letter-sized
+IMG_WIDTH, IMG_HEIGHT = 1485, 1856
+
 class TicketPDFGenerator:
     """
     Class that stores all functions related to ticket PDF generation.
@@ -57,8 +60,22 @@ class TicketPDFGenerator:
     def generate_pdf(self, image_bytes: io.BytesIO) -> io.BytesIO:
         output_pdf = pymupdf.open()
 
-        img_pdf = pymupdf.open("png", image_bytes).convert_to_pdf()
-        output_pdf.insert_pdf(pymupdf.open("pdf", img_pdf))
+        page = output_pdf.new_page(width=PAGE_WIDTH, height=PAGE_HEIGHT)
+
+        # Load the image from bytes
+        image_bytes.seek(0)
+        with pymupdf.open("png", image_bytes) as img:
+            img_pdf_bytes = img.convert_to_pdf()
+        img_pdf = pymupdf.open("pdf", img_pdf_bytes)
+
+        # Calculate position to center the image
+        img_width = 0.45 * IMG_WIDTH
+        img_height = 0.45 * IMG_HEIGHT
+        x = (PAGE_WIDTH - img_width) // 2
+        y = (PAGE_HEIGHT - img_height) // 2
+
+        # Insert the image into the page
+        page.show_pdf_page(pymupdf.Rect(x, y, x + img_width, y + img_height), img_pdf, 0)
 
         tnc = self.pdfs["tnc"]
         output_pdf.insert_pdf(tnc)
