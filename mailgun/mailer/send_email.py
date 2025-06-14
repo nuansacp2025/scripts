@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+BASE_URL = os.getenv("BASE_URL")
+
 MAILGUN_API_KEY = os.getenv("MAILGUN_API_KEY")
 MAILGUN_DOMAIN = os.getenv("MAILGUN_DOMAIN")
 FROM_EMAIL = os.getenv("FROM_EMAIL")
@@ -62,3 +64,19 @@ async def send_email(session: aiohttp.ClientSession, to_email, subject, template
                     response.raise_for_status()
         except asyncio.TimeoutError:
             raise RuntimeError("Request timed out")
+        
+async def send_confirmation_email(session: aiohttp.ClientSession, email, ticket_id, ref):
+    subject = "Confirmation: Your Ticket and Login Details"
+    template_name = "purchase.html"
+    context = {
+        "ticket_code": ticket_id,
+        "login_link": BASE_URL + "/login"
+    }
+
+    try:
+        response = await send_email(session, email, subject, template_name, context)
+        if response.status == 200:
+            ref.update({"purchaseConfirmationSent": True})
+            print(f"Email with ticket ID: {ticket_id} sent to {email}")
+    except Exception as e:
+        print(f"Email failed to {email}: {e}")

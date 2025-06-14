@@ -2,8 +2,10 @@ import io
 import csv
 import re
 import json
+import aiohttp
+from .db import add_orders
+from .send_emails import send_confirmation_emails
 from .generate_code import generate_ticket_id
-from ..db import add_orders
 from ..getfile import extract_file
 from ..mailgun import send_email
 
@@ -11,11 +13,14 @@ with open("assets/data/bundle_mapping.json", "r") as f:
     BUNDLE_DICT = json.load(f)
 
 async def process_orders():
-    csv_contents = extract_file()
+    async with aiohttp.ClientSession() as session:
+        csv_contents = extract_file()
 
-    for csv_content in csv_contents:
-        orders = read_orders(csv_content)
-        await add_orders(orders)
+        for csv_content in csv_contents:
+            orders = read_orders(csv_content)
+            add_orders(orders)
+
+        await send_confirmation_emails(session)
 
 def read_orders(csv_content):
     orders = {}

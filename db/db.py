@@ -1,6 +1,5 @@
 import os
 import json
-import aiohttp
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -44,42 +43,28 @@ def add_order_to_customer(transaction, email, ticket_ref):
             "lastUpdated": SERVER_TIMESTAMP
         })
 
-async def add_orders(orders):    
-    # Assumption: the cat_dict keys are catA, catB, catC following the naming in firestore
-    async with aiohttp.ClientSession() as session:
-        for key, cat_dict in orders.items():
-            ticket_id, email = key
-            ticket = cat_dict.copy()
-            if "catA" not in ticket:
-                ticket["catA"] = 0
-            if "catB" not in ticket:
-                ticket["catB"] = 0
-            if "catC" not in ticket:
-                ticket["catC"] = 0
-            ticket["code"] = ticket_id
-            ticket["checkedIn"] = False
-            ticket["seatConfirmed"] = False
-            ticket["purchaseConfirmationSent"] = False
-            ticket["lastUpdated"] = SERVER_TIMESTAMP
-            ticket["createdAt"] = SERVER_TIMESTAMP
+def get_unconfirmed_tickets():
+    try:
+        query = (
+            db.collection("tickets")
+            .where("purchaseConfirmationSent", "==", False)
+            .order_by("createdAt", direction=firestore.Query.DESCENDING)
+            .limit(100)
+        )
 
-            try:
-                _, ref = db.collection("tickets").add(ticket)
-                add_order_to_customer(transaction, email, ref)
-            except Exception as e:
-                print(f"Failed to insert ticket to DB: {e}")
-                continue
+        return list(query.stream())
 
-            subject = "Confirmation: Your Ticket and Login Details"
-            template_name = "purchase.html"
-            context = {
-                "ticket_code": ticket_id,
-                "login_link": BASE_URL + "/login"
-            }
+    except Exception as e:
+        print(f"Error querying unsent tickets: {e}")
+        return []
 
-            try:
-                response = await send_email(session, email, subject, template_name, context)
-                if response.status == 200:
-                    ref.update({"purchaseConfirmationSent": True})
-            except Exception as e:
-                print(f"Email failed to {email}: {e}")
+def insert_ticket(ticket, email):
+    ticket["lastUpdated"] = SERVER_TIMESTAMP
+    ticket["createdAt"] = SERVER_TIMESTAMP
+
+    try:
+        _, ref = db.collection("tickets").add(ticket)
+        add_order_to_customer(transaction, email, ref)
+
+    except Exception as e:
+        print(f"Failed to insert ticket to DB: {e}")     

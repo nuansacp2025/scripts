@@ -1,1 +1,1 @@
-from .mailer import send_email
+from .mailer import send_email, send_confirmation_email
