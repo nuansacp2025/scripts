@@ -1,3 +1,4 @@
+import io
 import os
 import aiohttp
 import asyncio
@@ -15,9 +16,14 @@ FROM_EMAIL = os.getenv("FROM_EMAIL")
 # base dirs
 BASE_DIR = os.path.dirname(__file__)
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
-ATTACHMENTS_DIR = os.path.join(BASE_DIR, "attachments")
 
-env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), 'templates')))
+env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+
+INLINE_IMAGES_FILENAMES = ["nuansa-logo.png"]
+INLINE_IMAGES = {}
+for fname in INLINE_IMAGES_FILENAMES:
+    with open(os.path.join(TEMPLATE_DIR, f"images/{fname}"), "rb") as f:
+        INLINE_IMAGES[fname] = io.BytesIO(f.read())
 
 async def send_email(session: aiohttp.ClientSession, to_email, subject, template_name, context, attachments=None, timeout=5):
     template = env.get_template(template_name)
@@ -30,6 +36,8 @@ async def send_email(session: aiohttp.ClientSession, to_email, subject, template
         ("subject", subject),
         ("html", html_content),
     )
+    for fname in INLINE_IMAGES:
+        data.add_field("inline", INLINE_IMAGES[fname], filename=fname)
     if attachments:
         for fname, f in attachments:
             data.add_field("attachment", f, filename=fname)
