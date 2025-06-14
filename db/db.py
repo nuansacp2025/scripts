@@ -5,6 +5,12 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore import SERVER_TIMESTAMP
+from ..mailgun import send_email
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_URL = os.getenv("BASE_URL")
 
 cred_json_str = os.getenv('PY_CREDENTIAL_JSON')
 
@@ -37,20 +43,28 @@ def add_order_to_customer(transaction, email, ticket_ref):
             "lastUpdated": SERVER_TIMESTAMP
         })
 
-def add_orders(orders):
-    # Assumption: the cat_dict keys are catA, catB, catC following the naming in firestore
-    for key, cat_dict in orders.items():
-        ticket_id, email = key
-        ticket = cat_dict.copy()
-        if "catA" not in ticket:
-            ticket["catA"] = 0
-        if "catB" not in ticket:
-            ticket["catB"] = 0
-        if "catC" not in ticket:
-            ticket["catC"] = 0
-        ticket["code"] = ticket_id
-        ticket["checkedIn"] = False
-        ticket["seatConfirmed"] = False
-        ticket["lastUpdated"] = SERVER_TIMESTAMP
+def get_unconfirmed_purchases():
+    try:
+        query = (
+            db.collection("tickets")
+            .where("purchaseConfirmationSent", "==", False)
+            .order_by("createdAt", direction=firestore.Query.ASCENDING)
+            .limit(100)
+        )
+
+        return list(query.stream())
+
+    except Exception as e:
+        print(f"Error querying unsent tickets: {e}")
+        return []
+
+def insert_ticket(ticket, email):
+    ticket["lastUpdated"] = SERVER_TIMESTAMP
+    ticket["createdAt"] = SERVER_TIMESTAMP
+
+    try:
         _, ref = db.collection("tickets").add(ticket)
         add_order_to_customer(transaction, email, ref)
+
+    except Exception as e:
+        print(f"Failed to insert ticket to DB: {e}")     
