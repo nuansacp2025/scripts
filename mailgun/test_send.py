@@ -1,23 +1,25 @@
 import aiohttp
 import asyncio
 
-from .mailer import send_email
-from .test_pdf_attachment import pdf1, pdf2
+from .mailer import send_email, send_purchase_confirmation, send_seat_confirmation
+from ..db.db import db
+from ..processing import TicketPDFGenerator
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        res = await send_email(
+        await send_purchase_confirmation(
             session=session,
-            to_email="rafaelky.dev@gmail.com",
-            subject="NUANSA 2025 Ticket Purchase Confirmation",
-            template_name="purchase.html",
-            context={
-                "ticket_code": "NUA2025-001",
-                "login_link": "https://tickets.nuansacp.org"
-            },
-            attachments=[("pdf1.pdf", pdf1), ("pdf2.pdf", pdf2)],
+            email="nuansacp.tech@gmail.com",
+            ticket_ref=db.document("tickets", "3LtLYlsDMjLT09iFmrwz"),
         )
-        print(res)
+        """
+        await send_seat_confirmation(
+            session=session,
+            email="nuansacp.tech@gmail.com",
+            ticket_ref=db.document("tickets", "3LtLYlsDMjLT09iFmrwz"),
+            pdf_generator=TicketPDFGenerator(),
+        )
+        """
 
 if __name__ == "__main__":
     asyncio.run(main())
