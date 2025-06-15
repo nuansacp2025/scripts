@@ -13,24 +13,13 @@ async def send_confirmation_emails(session: aiohttp.ClientSession):
     confirmed_ticket_docs_stream = get_confirmed_tickets(limit)
     seat_confirmation_tasks = []
     for doc in confirmed_ticket_docs_stream:
-        seat_confirmation_tasks.append(send_seat_confirmation(
-            session,
-            doc.get("customerEmail"),
-            doc.get("code"),
-            pdf_generator,
-            doc.reference
-        ))
+        seat_confirmation_tasks.append(send_seat_confirmation(session, doc, pdf_generator))
 
     limit -= len(seat_confirmation_tasks)
 
     order_docs_stream = get_unconfirmed_purchases(limit)
     purchase_confirmation_tasks = []
     for doc in order_docs_stream:
-        purchase_confirmation_tasks.append(send_purchase_confirmation(
-            session,
-            doc.get("customerEmail"),
-            doc.get("code"),
-            doc.reference
-        ))
+        purchase_confirmation_tasks.append(send_purchase_confirmation(session, doc))
 
     await asyncio.gather(*seat_confirmation_tasks, *purchase_confirmation_tasks)

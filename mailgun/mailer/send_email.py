@@ -82,7 +82,10 @@ async def send_email(session: aiohttp.ClientSession, to_email, subject, template
         except asyncio.TimeoutError:
             raise RuntimeError("Request timed out")
 
-async def send_purchase_confirmation(session: aiohttp.ClientSession, email, ticket_code, ref):
+async def send_purchase_confirmation(session: aiohttp.ClientSession, email, ticket_ref):
+    email = ticket_ref.get("customerEmail")
+    ticket_code = ticket_ref.get("code")
+
     subject = "NUANSA 2025 Ticket Purchase Confirmation"
     template_name = "purchase.html"
     context = {
@@ -93,7 +96,7 @@ async def send_purchase_confirmation(session: aiohttp.ClientSession, email, tick
     try:
         response = await send_email(session, email, subject, template_name, context)
         if response.status == 200:
-            ref.update({"purchaseConfirmationSent": True})
+            ticket_ref.update({"purchaseConfirmationSent": True})
             print(f"Email with ticket code: {ticket_code} sent to {email}")
         else:
             # Should not happen as `send_email` already handles this case
@@ -101,8 +104,10 @@ async def send_purchase_confirmation(session: aiohttp.ClientSession, email, tick
     except Exception as e:
         print(f"Email failed to {email}: {e}")
 
-async def send_seat_confirmation(session: aiohttp.ClientSession, email, ticket_code, pdf_generator: TicketPDFGenerator, ref):
-    seats_tuple = list(map(lambda s: (s.get("label"), s.get("category")), list(get_seats(ref.id))))
+async def send_seat_confirmation(session: aiohttp.ClientSession, email, ticket_ref, pdf_generator: TicketPDFGenerator):
+    email = ticket_ref.get("customerEmail")
+    ticket_code = ticket_ref.get("code")
+    seats_tuple = list(map(lambda s: (s.get("label"), s.get("category")), list(get_seats(ticket_ref.id))))
 
     subject = "NUANSA 2025 Seat Confirmation"
     template_name = "seat_confirmation.html"
@@ -117,7 +122,7 @@ async def send_seat_confirmation(session: aiohttp.ClientSession, email, ticket_c
     try:
         response = await send_email(session, email, subject, template_name, context, attachments=attachments)
         if response.status == 200:
-            ref.update({"seatConfirmationSent": True})
+            ticket_ref.update({"seatConfirmationSent": True})
             print(f"Email with ticket code: {ticket_code} sent to {email}")
         else:
             # Should not happen as `send_email` already handles this case
