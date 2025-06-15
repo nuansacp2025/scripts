@@ -1,13 +1,13 @@
 import asyncio
 import aiohttp
 from ..db import get_unconfirmed_purchases
-from ..mailgun import send_confirmation_email
+from ..mailgun import send_purchase_confirmation
 
 async def send_confirmation_emails(session: aiohttp.ClientSession):
     order_docs = get_unconfirmed_purchases()
 
     tasks = [
-        send_confirmation_email(
+        send_purchase_confirmation(
             session,
             doc.get("customerEmail"),
             doc.get("code"),
