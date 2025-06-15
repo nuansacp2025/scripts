@@ -17,6 +17,10 @@ async def send_confirmation_emails(session: aiohttp.ClientSession):
     for snap in confirmed_ticket_docs_stream:
         seat_confirmation_tasks.append(send_seat_confirmation(session, snap.reference, pdf_generator))
 
+    # TODO: Maybe make async (i.e. remove this part) after fixing bug on send_email? (need to test if there is any major performance increase)
+    for task in seat_confirmation_tasks:
+        await task
+
     print("Done.")
 
     limit -= len(seat_confirmation_tasks)
@@ -28,8 +32,11 @@ async def send_confirmation_emails(session: aiohttp.ClientSession):
     for snap in order_docs_stream:
         purchase_confirmation_tasks.append(send_purchase_confirmation(session, snap.reference))
 
+    # TODO: Maybe make async (i.e. remove this part) after fixing bug on send_email (need to test if there is any major performance increase)
+    for task in purchase_confirmation_tasks:
+        await task
+
     print("Done.")
 
-    print("Awaiting all emails...")
-
-    await asyncio.gather(*seat_confirmation_tasks, *purchase_confirmation_tasks)
+    #print("Awaiting all emails...")
+    #await asyncio.gather(*seat_confirmation_tasks, *purchase_confirmation_tasks)

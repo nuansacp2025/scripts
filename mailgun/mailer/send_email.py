@@ -27,7 +27,7 @@ INLINE_IMAGES_FILENAMES = ["nuansa-logo.png"]
 INLINE_IMAGES = {}
 for fname in INLINE_IMAGES_FILENAMES:
     with open(os.path.join(TEMPLATE_DIR, f"images/{fname}"), "rb") as f:
-        INLINE_IMAGES[fname] = io.BytesIO(f.read())
+        INLINE_IMAGES[fname] = f.read()
 
 CATEGORY_TO_LABEL = {
     "catA": "Cat. A",
