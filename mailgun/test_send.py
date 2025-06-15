@@ -7,34 +7,22 @@ from ..processing import TicketPDFGenerator
 
 async def main():
     async with aiohttp.ClientSession() as session:
+        """
         await send_purchase_confirmation(
             session=session,
-            email="nuansacp.tech@gmail.com",
             ticket_ref=db.document("tickets", "3LtLYlsDMjLT09iFmrwz"),
         )
         """
         await send_seat_confirmation(
             session=session,
-            email="nuansacp.tech@gmail.com",
             ticket_ref=db.document("tickets", "3LtLYlsDMjLT09iFmrwz"),
             pdf_generator=TicketPDFGenerator(),
         )
-        """
 
 if __name__ == "__main__":
     asyncio.run(main())
 
-# send_email(
-#     to_email="sandykristianwaluyo3@gmail.com",
-#     subject="NUANSA 2025 Seat Confirmation",
-#     template_name="seat_confirmation.html",
-#     context={
-#         "ticket_code": "NUA2025-001",
-#         "share_link": "https://tickets.nuansacp.org",
-#         "seat_num": "EJAY-LoL234"
-#     }
-# )
-#
+
 # send_email(
 #     to_email="sandykristianwaluyo3@gmail.com",
 #     subject="Reminder: Choose Your Seat for NUANSA 2025",
