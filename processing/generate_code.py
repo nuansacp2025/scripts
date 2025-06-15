@@ -27,7 +27,7 @@ def to_base62(num: int, length: int = 4) -> str:
     return result.rjust(length, '0')
 
 def datetime_to_code(date_time_str: str) -> str:
-    dt = datetime.strptime(date_time_str, "%d/%m/%y %H:%M")
+    dt = datetime.strptime(date_time_str, "%d/%m/%Y %H:%M")
     month = dt.month     # 1–12 → 4 bits
     day = dt.day         # 1–31 → 5 bits
     hour = dt.hour       # 0–23 → 5 bits
