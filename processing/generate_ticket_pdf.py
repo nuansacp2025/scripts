@@ -87,12 +87,12 @@ class TicketPDFGenerator:
         return pdf_bytes
 
     # Generates PDFs for a list of tuples (seat_label, category)
-    def generate_pdfs_from_seats(self, seats: list[tuple[str, str]]) -> list[tuple[str, bytes]]:
-        def generate(seat: tuple[str, str]) -> tuple[str, bytes]:
+    def generate_pdfs_from_seats(self, seats: list[tuple[str, str]]) -> list[tuple[str, io.BytesIO]]:
+        def generate(seat: tuple[str, str]) -> tuple[str, io.BytesIO]:
             label, cat = seat
             fname = f"{cat}_{label}.pdf"
             image_bytes = self.generate_image(cat, label)
-            pdf_bytes = self.generate_pdf(image_bytes).getvalue()
+            pdf_bytes = self.generate_pdf(image_bytes)
             return (fname, pdf_bytes)
         return list(map(generate, seats))
 
