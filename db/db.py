@@ -43,6 +43,30 @@ def add_order_to_customer(transaction, email, ticket_ref):
             "lastUpdated": SERVER_TIMESTAMP
         })
 
+def insert_order(ticket_code, email, cat_dict):
+    ticket = cat_dict.copy()
+    for cat in ["catA", "catB", "catC"]:
+        if cat not in ticket:
+            ticket[cat] = 0
+
+    ticket["code"] = ticket_code
+    ticket["customerEmail"] = email
+    ticket["checkedIn"] = False
+    ticket["seatConfirmed"] = False
+
+    ticket["purchaseConfirmationSent"] = False
+    ticket["createdAt"] = SERVER_TIMESTAMP
+    ticket["lastUpdated"] = SERVER_TIMESTAMP
+
+    try:
+        _, ref = db.collection("tickets").add(ticket)
+        add_order_to_customer(transaction, email, ref)
+
+    except Exception as e:
+        print(f"Failed to insert ticket to DB: {e}")
+
+    return ref
+
 def get_unconfirmed_purchases():
     try:
         query = (
@@ -57,14 +81,3 @@ def get_unconfirmed_purchases():
     except Exception as e:
         print(f"Error querying unsent tickets: {e}")
         return []
-
-def insert_ticket(ticket, email):
-    ticket["lastUpdated"] = SERVER_TIMESTAMP
-    ticket["createdAt"] = SERVER_TIMESTAMP
-
-    try:
-        _, ref = db.collection("tickets").add(ticket)
-        add_order_to_customer(transaction, email, ref)
-
-    except Exception as e:
-        print(f"Failed to insert ticket to DB: {e}")     

@@ -3,7 +3,7 @@ import csv
 import re
 import json
 import aiohttp
-from .db import add_orders
+from .update_db import add_orders
 from .send_emails import send_confirmation_emails
 from .generate_code import generate_ticket_id
 from ..getfile import extract_file

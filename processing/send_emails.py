@@ -9,7 +9,7 @@ async def send_confirmation_emails(session: aiohttp.ClientSession):
     tasks = [
         send_confirmation_email(
             session,
-            doc.get("email"),
+            doc.get("customerEmail"),
             doc.get("code"),
             doc.reference
         ) for doc in order_docs
