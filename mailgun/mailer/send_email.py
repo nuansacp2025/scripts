@@ -4,6 +4,8 @@ import asyncio
 import time
 from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
+from ...db import get_seats
+from ...processing import TicketPDFGenerator
 
 load_dotenv()
 
@@ -20,6 +22,13 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 ATTACHMENTS_DIR = os.path.join(BASE_DIR, "attachments")
 
 env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), 'templates')))
+
+CATEGORY_TO_LABEL = {
+    "catA": "Cat. A",
+    "catB": "Cat. B",
+    "catC": "Cat. C",
+    "vip": "VIP",
+}
 
 async def send_email(session: aiohttp.ClientSession, to_email, subject, template_name, context, attachments=None, timeout=5):
     template = env.get_template(template_name)
@@ -77,6 +86,30 @@ async def send_purchase_confirmation(session: aiohttp.ClientSession, email, tick
         response = await send_email(session, email, subject, template_name, context)
         if response.status == 200:
             ref.update({"purchaseConfirmationSent": True})
+            print(f"Email with ticket code: {ticket_code} sent to {email}")
+        else:
+            # Should not happen as `send_email` already handles this case
+            response.raise_for_status()
+    except Exception as e:
+        print(f"Email failed to {email}: {e}")
+
+async def send_seat_confirmation(session: aiohttp.ClientSession, email, ticket_code, pdf_generator: TicketPDFGenerator, ref):
+    seats_tuple = list(map(lambda s: (s.get("label"), s.get("category")), list(get_seats(ref.id))))
+
+    subject = "NUANSA 2025 Seat Confirmation"
+    template_name = "seat_confirmation.html"
+    context = {
+        "ticket_code": ticket_code,
+        "seat_num": ", ".join(map(
+            lambda s: f"{s[0]} ({CATEGORY_TO_LABEL[s[1]]})", seats_tuple
+        )),
+    }
+    attachments = pdf_generator.generate_pdfs_from_seats(seats_tuple)
+
+    try:
+        response = await send_email(session, email, subject, template_name, context, attachments=attachments)
+        if response.status == 200:
+            ref.update({"seatConfirmationSent": True})
             print(f"Email with ticket code: {ticket_code} sent to {email}")
         else:
             # Should not happen as `send_email` already handles this case

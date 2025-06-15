@@ -5,7 +5,6 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore import SERVER_TIMESTAMP
-from ..mailgun import send_email
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -67,17 +66,37 @@ def insert_order(ticket_code, email, cat_dict):
 
     return ref
 
-def get_unconfirmed_purchases():
+def get_seats(ticket_id):
+    return db.collection("tickets").where("reservedBy", "==", ticket_id).stream()
+
+def get_confirmed_tickets(limit=None):
+    if limit == 0: return []
+    try:
+        query = (
+            db.collection("tickets")
+            .where("seatConfirmationSent", "==", False)
+            .order_by("confirmedAt", direction=firestore.Query.ASCENDING)
+        )
+        if limit:
+            query = query.limit(limit)
+        return query.stream()
+
+    except Exception as e:
+        print(f"Error querying tickets for unsent seat confirmation: {e}")
+        return []
+
+def get_unconfirmed_purchases(limit=None):
+    if limit == 0: return []
     try:
         query = (
             db.collection("tickets")
             .where("purchaseConfirmationSent", "==", False)
             .order_by("createdAt", direction=firestore.Query.ASCENDING)
-            .limit(100)
         )
-
-        return list(query.stream())
+        if limit:
+            query = query.limit(limit)
+        return query.stream()
 
     except Exception as e:
-        print(f"Error querying unsent tickets: {e}")
+        print(f"Error querying tickets for unsent purchase confirmation: {e}")
         return []
