@@ -67,7 +67,7 @@ def insert_order(ticket_code, email, cat_dict):
     return ref
 
 def get_seats(ticket_id):
-    return db.collection("tickets").where("reservedBy", "==", ticket_id).stream()
+    return db.collection("seats").where("reservedBy", "==", ticket_id).stream()
 
 def get_confirmed_tickets(limit=None):
     if limit == 0: return []

@@ -51,7 +51,7 @@ async def send_email(session: aiohttp.ClientSession, to_email, subject, template
         data.add_field("inline", INLINE_IMAGES[fname], filename=fname)
     if attachments:
         for fname, f in attachments:
-            data.add_field("attachment", f, filename=fname)
+            data.add_field("attachment", f.getbuffer(), filename=fname)
 
     # Possible API response codes: 400, 403, 404, 429, 500
     # https://documentation.mailgun.com/docs/mailgun/api-reference/#api-response-codes
@@ -115,6 +115,8 @@ async def send_seat_confirmation(session: aiohttp.ClientSession, ticket_ref: fir
         seat_dict = snap.to_dict()
         seats_tuple.append((seat_dict.get("label"), seat_dict.get("category")))
 
+    print(seats_tuple)
+
     subject = "NUANSA 2025 Seat Confirmation"
     template_name = "seat_confirmation.html"
     context = {
@@ -124,6 +126,7 @@ async def send_seat_confirmation(session: aiohttp.ClientSession, ticket_ref: fir
         )),
     }
     attachments = pdf_generator.generate_pdfs_from_seats(seats_tuple)
+    print(attachments)
 
     try:
         response = await send_email(session, email, subject, template_name, context, attachments=attachments)
