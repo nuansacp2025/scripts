@@ -12,9 +12,9 @@ from ..getfile import extract_file
 with open(os.path.join(os.path.dirname(__file__), "assets/data/bundle_mapping.json"), "r") as f:
     BUNDLE_DICT = json.load(f)
 
-async def process_orders():
+async def process_orders(filepath=None):
     async with aiohttp.ClientSession() as session:
-        csv_contents = extract_file()
+        csv_contents = extract_file(filepath=filepath)
 
         for csv_content in csv_contents:
             orders = read_orders(csv_content)

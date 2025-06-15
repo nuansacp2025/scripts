@@ -6,6 +6,7 @@ import time
 from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
 from ...db import get_seats
+from firebase_admin.firestore import firestore
 
 load_dotenv()
 
@@ -81,7 +82,7 @@ async def send_email(session: aiohttp.ClientSession, to_email, subject, template
         except asyncio.TimeoutError:
             raise RuntimeError("Request timed out")
 
-async def send_purchase_confirmation(session: aiohttp.ClientSession, email, ticket_ref):
+async def send_purchase_confirmation(session: aiohttp.ClientSession, ticket_ref: firestore.DocumentReference):
     ticket_dict = ticket_ref.get().to_dict()
     email = ticket_dict.get("customerEmail")
     ticket_code = ticket_dict.get("code")
@@ -104,14 +105,14 @@ async def send_purchase_confirmation(session: aiohttp.ClientSession, email, tick
     except Exception as e:
         print(f"Email failed to {email}: {e}")
 
-async def send_seat_confirmation(session: aiohttp.ClientSession, email, ticket_ref, pdf_generator):
+async def send_seat_confirmation(session: aiohttp.ClientSession, ticket_ref: firestore.DocumentReference, pdf_generator):
     ticket_dict = ticket_ref.get().to_dict()
     email = ticket_dict.get("customerEmail")
     ticket_code = ticket_dict.get("code")
 
     seats_tuple = []
-    for doc in get_seats(ticket_ref.id):
-        seat_dict = doc.get().to_dict()
+    for snap in get_seats(ticket_ref.id):
+        seat_dict = snap.to_dict()
         seats_tuple.append((seat_dict.get("label"), seat_dict.get("category")))
 
     subject = "NUANSA 2025 Seat Confirmation"
