@@ -5,6 +5,11 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 from google.cloud.firestore import SERVER_TIMESTAMP
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BASE_URL = os.getenv("BASE_URL")
 
 cred_json_str = os.getenv('PY_CREDENTIAL_JSON')
 
@@ -37,20 +42,61 @@ def add_order_to_customer(transaction, email, ticket_ref):
             "lastUpdated": SERVER_TIMESTAMP
         })
 
-def add_orders(orders):
-    # Assumption: the cat_dict keys are catA, catB, catC following the naming in firestore
-    for key, cat_dict in orders.items():
-        ticket_id, email = key
-        ticket = cat_dict.copy()
-        if "catA" not in ticket:
-            ticket["catA"] = 0
-        if "catB" not in ticket:
-            ticket["catB"] = 0
-        if "catC" not in ticket:
-            ticket["catC"] = 0
-        ticket["code"] = ticket_id
-        ticket["checkedIn"] = False
-        ticket["seatConfirmed"] = False
-        ticket["lastUpdated"] = SERVER_TIMESTAMP
+def insert_order(ticket_code, email, cat_dict):
+    ticket = cat_dict.copy()
+    for cat in ["catA", "catB", "catC"]:
+        if cat not in ticket:
+            ticket[cat] = 0
+
+    ticket["code"] = ticket_code
+    ticket["customerEmail"] = email
+    ticket["checkedIn"] = False
+    ticket["seatConfirmed"] = False
+
+    ticket["purchaseConfirmationSent"] = False
+    ticket["createdAt"] = SERVER_TIMESTAMP
+    ticket["lastUpdated"] = SERVER_TIMESTAMP
+
+    try:
         _, ref = db.collection("tickets").add(ticket)
         add_order_to_customer(transaction, email, ref)
+
+    except Exception as e:
+        print(f"Failed to insert ticket to DB: {e}")
+
+    return ref
+
+def get_seats(ticket_id):
+    return db.collection("seats").where("reservedBy", "==", ticket_id).stream()
+
+def get_confirmed_tickets(limit=None):
+    if limit == 0: return []
+    try:
+        query = (
+            db.collection("tickets")
+            .where("seatConfirmationSent", "==", False)
+            .order_by("confirmedAt", direction=firestore.Query.ASCENDING)
+        )
+        if limit:
+            query = query.limit(limit)
+        return query.stream()
+
+    except Exception as e:
+        print(f"Error querying tickets for unsent seat confirmation: {e}")
+        return []
+
+def get_unconfirmed_purchases(limit=None):
+    if limit == 0: return []
+    try:
+        query = (
+            db.collection("tickets")
+            .where("purchaseConfirmationSent", "==", False)
+            .order_by("createdAt", direction=firestore.Query.ASCENDING)
+        )
+        if limit:
+            query = query.limit(limit)
+        return query.stream()
+
+    except Exception as e:
+        print(f"Error querying tickets for unsent purchase confirmation: {e}")
+        return []

@@ -5,8 +5,12 @@ import asyncio
 import time
 from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
+from ...db import get_seats
+from firebase_admin.firestore import firestore
 
 load_dotenv()
+
+BASE_URL = os.getenv("BASE_URL")
 
 MAILGUN_API_KEY = os.getenv("MAILGUN_API_KEY")
 MAILGUN_DOMAIN = os.getenv("MAILGUN_DOMAIN")
@@ -23,7 +27,14 @@ INLINE_IMAGES_FILENAMES = ["nuansa-logo.png"]
 INLINE_IMAGES = {}
 for fname in INLINE_IMAGES_FILENAMES:
     with open(os.path.join(TEMPLATE_DIR, f"images/{fname}"), "rb") as f:
-        INLINE_IMAGES[fname] = io.BytesIO(f.read())
+        INLINE_IMAGES[fname] = f.read()
+
+CATEGORY_TO_LABEL = {
+    "catA": "Cat. A",
+    "catB": "Cat. B",
+    "catC": "Cat. C",
+    "vip": "VIP",
+}
 
 async def send_email(session: aiohttp.ClientSession, to_email, subject, template_name, context, attachments=None, timeout=5):
     template = env.get_template(template_name)
@@ -40,7 +51,7 @@ async def send_email(session: aiohttp.ClientSession, to_email, subject, template
         data.add_field("inline", INLINE_IMAGES[fname], filename=fname)
     if attachments:
         for fname, f in attachments:
-            data.add_field("attachment", f, filename=fname)
+            data.add_field("attachment", f.getbuffer(), filename=fname)
 
     # Possible API response codes: 400, 403, 404, 429, 500
     # https://documentation.mailgun.com/docs/mailgun/api-reference/#api-response-codes
@@ -70,3 +81,60 @@ async def send_email(session: aiohttp.ClientSession, to_email, subject, template
                     response.raise_for_status()
         except asyncio.TimeoutError:
             raise RuntimeError("Request timed out")
+
+async def send_purchase_confirmation(session: aiohttp.ClientSession, ticket_ref: firestore.DocumentReference):
+    ticket_dict = ticket_ref.get().to_dict()
+    email = ticket_dict.get("customerEmail")
+    ticket_code = ticket_dict.get("code")
+
+    subject = "NUANSA 2025 Ticket Purchase Confirmation"
+    template_name = "purchase.html"
+    context = {
+        "ticket_code": ticket_code,
+        "login_link": BASE_URL + "/login"
+    }
+
+    try:
+        response = await send_email(session, email, subject, template_name, context)
+        if response.status == 200:
+            ticket_ref.update({"purchaseConfirmationSent": True})
+            print(f"Email with ticket code: {ticket_code} sent to {email}")
+        else:
+            # Should not happen as `send_email` already handles this case
+            response.raise_for_status()
+    except Exception as e:
+        print(f"Email failed to {email}: {e}")
+
+async def send_seat_confirmation(session: aiohttp.ClientSession, ticket_ref: firestore.DocumentReference, pdf_generator):
+    ticket_dict = ticket_ref.get().to_dict()
+    email = ticket_dict.get("customerEmail")
+    ticket_code = ticket_dict.get("code")
+
+    seats_tuple = []
+    for snap in get_seats(ticket_ref.id):
+        seat_dict = snap.to_dict()
+        seats_tuple.append((seat_dict.get("label"), seat_dict.get("category")))
+
+    print(seats_tuple)
+
+    subject = "NUANSA 2025 Seat Confirmation"
+    template_name = "seat_confirmation.html"
+    context = {
+        "ticket_code": ticket_code,
+        "seat_num": ", ".join(map(
+            lambda s: f"{s[0]} ({CATEGORY_TO_LABEL[s[1]]})", seats_tuple
+        )),
+    }
+    attachments = pdf_generator.generate_pdfs_from_seats(seats_tuple)
+    print(attachments)
+
+    try:
+        response = await send_email(session, email, subject, template_name, context, attachments=attachments)
+        if response.status == 200:
+            ticket_ref.update({"seatConfirmationSent": True})
+            print(f"Email with ticket code: {ticket_code} sent to {email}")
+        else:
+            # Should not happen as `send_email` already handles this case
+            response.raise_for_status()
+    except Exception as e:
+        print(f"Email failed to {email}: {e}")

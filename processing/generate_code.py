@@ -19,7 +19,7 @@ def generate_ticket_id(order_id: str, datetime_str: str) -> str:
     code = datetime_to_code(datetime_str)
     return code + last4
 
-def to_base62(num: int, length: int = 5) -> str:
+def to_base62(num: int, length: int = 4) -> str:
     result = ""
     while num > 0:
         result = BASE62[num % 62] + result
@@ -32,10 +32,9 @@ def datetime_to_code(date_time_str: str) -> str:
     day = dt.day         # 1–31 → 5 bits
     hour = dt.hour       # 0–23 → 5 bits
     minute = dt.minute   # 0–59 → 6 bits
-    second = dt.second   # 0–59 → 6 bits
 
-    # Combine into a single integer 26 bits
-    code = (month << 22) | (day << 17) | (hour << 12) | (minute << 6) | second
+    # Combine into a single integer 20 bits
+    code = (month << 16) | (day << 11) | (hour << 6) | minute
 
-    # Convert 26 bit to 5 base-62 characters
-    return to_base62(code, 5)
+    # Convert 20 bit to 5 base-62 characters
+    return to_base62(code, 4)
