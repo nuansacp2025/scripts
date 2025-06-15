@@ -1,7 +1,7 @@
 import asyncio
 import aiohttp
 from ..db import get_unconfirmed_purchases, get_confirmed_tickets
-from ..mailgun import send_purchase_confirmation, send_seat_confirmation
+from ..mailgun.mailer import send_purchase_confirmation, send_seat_confirmation
 from .generate_ticket_pdf import TicketPDFGenerator
 
 async def send_confirmation_emails(session: aiohttp.ClientSession):

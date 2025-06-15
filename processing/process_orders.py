@@ -1,4 +1,5 @@
 import io
+import os
 import csv
 import re
 import json
@@ -7,9 +8,8 @@ from .update_db import add_orders
 from .send_emails import send_confirmation_emails
 from .generate_code import generate_ticket_id
 from ..getfile import extract_file
-from ..mailgun import send_email
 
-with open("assets/data/bundle_mapping.json", "r") as f:
+with open(os.path.join(os.path.dirname(__file__), "assets/data/bundle_mapping.json"), "r") as f:
     BUNDLE_DICT = json.load(f)
 
 async def process_orders():

@@ -6,7 +6,6 @@ import time
 from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
 from ...db import get_seats
-from ...processing import TicketPDFGenerator
 
 load_dotenv()
 
@@ -83,8 +82,9 @@ async def send_email(session: aiohttp.ClientSession, to_email, subject, template
             raise RuntimeError("Request timed out")
 
 async def send_purchase_confirmation(session: aiohttp.ClientSession, email, ticket_ref):
-    email = ticket_ref.get("customerEmail")
-    ticket_code = ticket_ref.get("code")
+    ticket_dict = ticket_ref.get().to_dict()
+    email = ticket_dict.get("customerEmail")
+    ticket_code = ticket_dict.get("code")
 
     subject = "NUANSA 2025 Ticket Purchase Confirmation"
     template_name = "purchase.html"
@@ -104,10 +104,15 @@ async def send_purchase_confirmation(session: aiohttp.ClientSession, email, tick
     except Exception as e:
         print(f"Email failed to {email}: {e}")
 
-async def send_seat_confirmation(session: aiohttp.ClientSession, email, ticket_ref, pdf_generator: TicketPDFGenerator):
-    email = ticket_ref.get("customerEmail")
-    ticket_code = ticket_ref.get("code")
-    seats_tuple = list(map(lambda s: (s.get("label"), s.get("category")), list(get_seats(ticket_ref.id))))
+async def send_seat_confirmation(session: aiohttp.ClientSession, email, ticket_ref, pdf_generator):
+    ticket_dict = ticket_ref.get().to_dict()
+    email = ticket_dict.get("customerEmail")
+    ticket_code = ticket_dict.get("code")
+
+    seats_tuple = []
+    for doc in get_seats(ticket_ref.id):
+        seat_dict = doc.get().to_dict()
+        seats_tuple.append((seat_dict.get("label"), seat_dict.get("category")))
 
     subject = "NUANSA 2025 Seat Confirmation"
     template_name = "seat_confirmation.html"
