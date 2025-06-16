@@ -21,7 +21,7 @@ async def process_orders(filepath=None):
             orders = read_orders(csv_content)
             skip_count = 0  # to cross-check when running script manually
             for snap in get_tickets():
-                if orders.pop((snap.get("code"), snap.get("email")), None) is not None:
+                if orders.pop((snap.get("code"), snap.get("customerEmail")), None) is not None:
                     skip_count += 1
             print(f"Skipped {skip_count} tickets which already exist")
             add_orders(orders)

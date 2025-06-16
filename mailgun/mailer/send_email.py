@@ -36,6 +36,9 @@ CATEGORY_TO_LABEL = {
     "vip": "VIP",
 }
 
+# max email size is 25mb to prevent email getting lost, one ticket pdf on avg is 2-2.5mb
+MAX_PDF_PER_EMAIL = 10
+
 async def send_email(session: aiohttp.ClientSession, to_email, subject, template_name, context, attachments=None, timeout=5):
     template = env.get_template(template_name)
     html_content = template.render(context)
@@ -110,31 +113,35 @@ async def send_seat_confirmation(session: aiohttp.ClientSession, ticket_ref: fir
     email = ticket_dict.get("customerEmail")
     ticket_code = ticket_dict.get("code")
 
-    seats_tuple = []
+    all_seats_tuple = []
     for snap in get_seats(ticket_ref.id):
         seat_dict = snap.to_dict()
-        seats_tuple.append((seat_dict.get("label"), seat_dict.get("category")))
+        all_seats_tuple.append((seat_dict.get("label"), seat_dict.get("category")))
 
-    print(seats_tuple)
-
-    subject = "NUANSA 2025 Seat Confirmation"
     template_name = "seat_confirmation.html"
-    context = {
-        "ticket_code": ticket_code,
-        "seat_num": ", ".join(map(
-            lambda s: f"{s[0]} ({CATEGORY_TO_LABEL[s[1]]})", seats_tuple
-        )),
-    }
-    attachments = pdf_generator.generate_pdfs_from_seats(seats_tuple)
-    print(attachments)
+    all_attachments = pdf_generator.generate_pdfs_from_seats(all_seats_tuple)
 
+    num_of_emails = (len(all_attachments) - 1) // 10 + 1
     try:
-        response = await send_email(session, email, subject, template_name, context, attachments=attachments)
-        if response.status == 200:
-            ticket_ref.update({"seatConfirmationSent": True})
-            print(f"Email with ticket code: {ticket_code} sent to {email}")
-        else:
-            # Should not happen as `send_email` already handles this case
-            response.raise_for_status()
+        for i in range(num_of_emails):
+            subject = "NUANSA 2025 Seat Confirmation" + (f" ({i+1} of {num_of_emails})" if num_of_emails > 1 else "")
+            seats_tuple = all_seats_tuple[i*10:min((i+1)*10, len(all_attachments))]
+            context = {
+                "ticket_code": ticket_code,
+                "seat_num": ", ".join(map(
+                    lambda s: f"{s[0]} ({CATEGORY_TO_LABEL[s[1]]})", seats_tuple
+                )),
+            }
+            attachments = all_attachments[i*10:min((i+1)*10, len(all_attachments))]
+
+            # TODO: as a precaution, we set timeout=60, is there a better way?
+            response = await send_email(session, email, subject, template_name, context, attachments=attachments, timeout=60)
+            if response.status == 200:
+                print(f"Email ({i+1} of {num_of_emails}) with ticket code: {ticket_code} sent to {email}")
+            else:
+                # Should not happen as `send_email` already handles this case
+                response.raise_for_status()
+
+        ticket_ref.update({"seatConfirmationSent": True})  # confirm only if all emails went thru
     except Exception as e:
         print(f"Email failed to {email}: {e}")
