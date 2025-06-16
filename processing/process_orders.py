@@ -8,6 +8,7 @@ from .update_db import add_orders
 from .send_emails import send_confirmation_emails
 from .generate_code import generate_ticket_id
 from ..getfile import extract_file
+from ..db import get_tickets
 
 with open(os.path.join(os.path.dirname(__file__), "assets/data/bundle_mapping.json"), "r") as f:
     BUNDLE_DICT = json.load(f)
@@ -18,6 +19,11 @@ async def process_orders(filepath=None):
 
         for csv_content in csv_contents:
             orders = read_orders(csv_content)
+            skip_count = 0  # to cross-check when running script manually
+            for snap in get_tickets():
+                if orders.pop((snap.get("code"), snap.get("email")), None) is not None:
+                    skip_count += 1
+            print(f"Skipped {skip_count} tickets which already exist")
             add_orders(orders)
 
         await send_confirmation_emails(session)

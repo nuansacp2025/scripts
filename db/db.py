@@ -66,6 +66,9 @@ def insert_order(ticket_code, email, cat_dict):
 
     return ref
 
+def get_tickets():
+    return db.collection("tickets").stream()
+
 def get_seats(ticket_id):
     return db.collection("seats").where("reservedBy", "==", ticket_id).stream()
 
