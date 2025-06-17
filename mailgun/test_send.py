@@ -7,17 +7,17 @@ from ..processing import TicketPDFGenerator
 
 async def main():
     async with aiohttp.ClientSession() as session:
-        """
         await send_purchase_confirmation(
             session=session,
-            ticket_ref=db.document("tickets", "3LtLYlsDMjLT09iFmrwz"),
+            ticket_ref=db.document("tickets", "1FhVoup8pARjBky708pa"),
         )
         """
         await send_seat_confirmation(
             session=session,
-            ticket_ref=db.document("tickets", "3LtLYlsDMjLT09iFmrwz"),
+            ticket_ref=db.document("tickets", "1FhVoup8pARjBky708pa"),
             pdf_generator=TicketPDFGenerator(),
         )
+        """
 
 if __name__ == "__main__":
     asyncio.run(main())
